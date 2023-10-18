@@ -7,17 +7,55 @@
 # To get a newer version, you will need to update the SHA.
 # You can also reference a tag or branch, but the action may change without warning.
 
-name: Move opened card
+name: Move Issue to Project
+
 on:
   issues:
-    types: [opened]
+    types:
+      - opened
 
 jobs:
-  move-assigned-card:
-    runs-on: macos-latest
+  move-to-project:
+    runs-on: ubuntu-latest
+
     steps:
-      - uses: alex-page/github-project-automation-plus@v0.8.3
-        with:
-          project: i2p_project
-          column: In Progress
-          repo-token: ${{ secrets.SECRET_PAT_I2P }}
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+
+      - name: Get Project Columns
+        id: get_columns
+        run: |
+          REPO_API_URL="https://api.github.com/repos/${{ github.repository }}"
+          COLUMN_NAME="In progress"
+
+          COLUMNS_RESPONSE=$(curl -H "Authorization: token ${{ secrets.SECRET_PAT_I2P }}" -H "Accept: application/vnd.github.inertia-preview+json" "$REPO_API_URL/projects/columns")
+
+          echo "::set-output name=column_id::$(echo "$COLUMNS_RESPONSE" | jq -r ".[] | select(.name == \"$COLUMN_NAME\") | .id")"
+        shell: bash
+
+      - name: Move Issue to Project
+        env:
+          GITHUB_TOKEN: ${{ secrets.SECRET_PAT_I2P }}
+        run: |
+          ISSUE_NUMBER=$(jq -r .issue.number $GITHUB_EVENT_PATH)
+          PROJECT_COLUMN_ID="${{ steps.get_columns.outputs.column_id }}"
+          REPO_API_URL="https://api.github.com/repos/${{ github.repository }}"
+
+          if [ -z "$PROJECT_COLUMN_ID" ]; then
+            echo "Error: Column not found."
+            exit 1
+          fi
+
+          # Create a project card for the issue
+          CARD_RESPONSE=$(curl -X POST "$REPO_API_URL/projects/columns/$PROJECT_COLUMN_ID/cards" \
+            -H "Authorization: token $SECRET_PAT_I2P" \
+            -H "Accept: application/vnd.github.inertia-preview+json" \
+            -d "{\"content_id\":$ISSUE_NUMBER,\"content_type\":\"Issue\"}")
+
+          # Check if the card was created successfully
+          if [ "$(echo $CARD_RESPONSE | jq -r .id)" != "null" ]; then
+            echo "Issue #$ISSUE_NUMBER moved to the project successfully."
+          else
+            echo "Failed to move issue to the project."
+            exit 1
+          fi
