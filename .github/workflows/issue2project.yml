@@ -1,39 +1,23 @@
-name: Create Issue and Add to Project
+# This workflow uses actions that are not certified by GitHub.
+# They are provided by a third-party and are governed by
+# separate terms of service, privacy policy, and support
+# documentation.
+
+# GitHub recommends pinning actions to a commit SHA.
+# To get a newer version, you will need to update the SHA.
+# You can also reference a tag or branch, but the action may change without warning.
+
+name: Move assigned card
 on:
   issues:
-    types: opened
-
+    types:
+      - assigned
 jobs:
-  create-issue:
+  move-assigned-card:
     runs-on: macos-latest
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v2
-
-      - name: Create Issue
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          issue_title="New Issue Title"
-          issue_body="Description of the issue."
-          project_column_id=12345  # Replace with your project column ID
-          repository_owner=${{ github.repository_owner }}
-          repository_name=${{ github.event.repository.name }}
-
-          # Create the issue and capture the response
-          response=$(curl -X POST \
-            -H "Authorization: token $GITHUB_TOKEN" \
-            -d "{\"title\":\"$issue_title\",\"body\":\"$issue_body\",\"labels\":[],\"assignees\":[]}" \
-            "https://api.github.com/repos/$repository_owner/$repository_name/issues")
-
-          # Extract the issue number from the response
-          issue_number=$(echo $response | jq -r '.number')
-
-          # Add the issue to the project
-          curl -X POST \
-            -H "Authorization: token $GITHUB_TOKEN" \
-            -d "{}" \
-            "https://api.github.com/projects/columns/cards/$project_column_id/notes"
-
-          echo "Issue $issue_number has been created and added to the project."
-
+      - uses: alex-page/github-project-automation-plus@7ffb872c64bd809d23563a130a0a97d01dfa8f43
+        with:
+          project: i2p_project
+          column: In Progress
+          repo-token: ${{ secrets.SECRET_PAT_I2P }}
