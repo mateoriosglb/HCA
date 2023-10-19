@@ -48,7 +48,7 @@ jobs:
 
           # Create a project card for the issue
           CARD_RESPONSE=$(curl -X POST "$REPO_API_URL/projects/columns/$PROJECT_COLUMN_ID/cards" \
-            -H "Authorization: token $SECRET_PAT_I2P" \
+            -H "Authorization: token $GITHUB_TOKEN-" \
             -H "Accept: application/vnd.github.inertia-preview+json" \
             -d "{\"content_id\":$ISSUE_NUMBER,\"content_type\":\"Issue\"}")
 
