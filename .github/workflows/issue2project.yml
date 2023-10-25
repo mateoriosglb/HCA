@@ -14,7 +14,7 @@ jobs:
         with:
           # You can target a project in a different organization
           # to the issue
-          project-url: https://github.com/mateoriosglb/HCA/projects?query=is%3Aopen  # https://github.com/orgs/<orgName>/projects/<projectNumber>
+          project-url: https://github.com/users/mateoriosglb/projects/2  # https://github.com/orgs/<orgName>/projects/<projectNumber>
           github-token: ${{ secrets.SECRET_PAT_I2P }}
           #labeled: bug, needs-triage
           #label-operator: OR
