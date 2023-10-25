@@ -1,13 +1,4 @@
-# This workflow uses actions that are not certified by GitHub.
-# They are provided by a third-party and are governed by
-# separate terms of service, privacy policy, and support
-# documentation.
-
-# GitHub recommends pinning actions to a commit SHA.
-# To get a newer version, you will need to update the SHA.
-# You can also reference a tag or branch, but the action may change without warning.
-
-name: Move Issue to Project
+name: Add bugs to bugs project
 
 on:
   issues:
@@ -15,47 +6,15 @@ on:
       - opened
 
 jobs:
-  move-to-project:
-    runs-on: macos-latest
-
+  add-to-project:
+    name: Add issue to project
+    runs-on: ubuntu-latest
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v2
-
-      - name: Get Project Columns
-        id: get_columns
-        run: |
-          REPO_API_URL="https://api.github.com/repos/${{ github.repository }}"
-          COLUMN_NAME="In progress"
-
-          COLUMNS_RESPONSE=$(curl -H "Authorization: token ${{ secrets.SECRET_PAT_I2P }}" -H "Accept: application/vnd.github.inertia-preview+json" "$REPO_API_URL/projects/columns")
-
-          echo "::set-output name=column_id::$(echo "$COLUMNS_RESPONSE" | jq -r ".[] | select(.name == \"$COLUMN_NAME\") | .id")"
-        shell: bash
-
-      - name: Move Issue to Project
-        env:
-          GITHUB_TOKEN: ${{ secrets.SECRET_PAT_I2P }}
-        run: |
-          ISSUE_NUMBER=$(jq -r .issue.number $GITHUB_EVENT_PATH)
-          PROJECT_COLUMN_ID="${{ steps.get_columns.outputs.column_id }}"
-          REPO_API_URL="https://api.github.com/repos/${{ github.repository }}"
-
-          if [ -z "$PROJECT_COLUMN_ID" ]; then
-            echo "Error: Column not found."
-            exit 1
-          fi
-
-          # Create a project card for the issue
-          CARD_RESPONSE=$(curl -X POST "$REPO_API_URL/projects/columns/$PROJECT_COLUMN_ID/cards" \
-            -H "Authorization: token $GITHUB_TOKEN-" \
-            -H "Accept: application/vnd.github.inertia-preview+json" \
-            -d "{\"content_id\":$ISSUE_NUMBER,\"content_type\":\"Issue\"}")
-
-          # Check if the card was created successfully
-          if [ "$(echo $CARD_RESPONSE | jq -r .id)" != "null" ]; then
-            echo "Issue #$ISSUE_NUMBER moved to the project successfully."
-          else
-            echo "Failed to move issue to the project."
-            exit 1
-          fi
+      - uses: actions/add-to-project
+        with:
+          # You can target a project in a different organization
+          # to the issue
+          project-url: https://github.com/mateoriosglb/HCA/projects?query=is%3Aopen  # https://github.com/orgs/<orgName>/projects/<projectNumber>
+          github-token: ${{ secrets.SECRET_PAT_I2P }}
+          #labeled: bug, needs-triage
+          #label-operator: OR
